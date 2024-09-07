@@ -1,7 +1,7 @@
 const IPFS_GATEWAY = 'https://ipfs.decentralized-content.com/ipfs/';
 
 export function getIpfsLink(ipfsHash: string): string {
-  if (!ipfsHash) return '';
+  if (!(ipfsHash && ipfsHash.includes("ipfs"))) return ipfsHash;
 
   // Remove 'ipfs://' prefix if present
   const cleanHash = ipfsHash.replace(/^ipfs:\/\//, '');
