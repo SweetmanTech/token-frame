@@ -6,6 +6,7 @@ import { devtools } from "frog/dev";
 import { handle } from "frog/next";
 import { serveStatic } from "frog/serve-static";
 import { Box, Heading, HStack, Image, Text, VStack, vars } from "./ui";
+import { getIpfsLink } from "@/lib/getIpfsLink";
 
 async function fetchTokens(creatorAddress: string) {
   const response = await fetch(
@@ -72,6 +73,8 @@ app.frame("/results", async (c) => {
     0
   );
 
+  const shareUrl = `https://token-frame-one.vercel.app/api/${fid}`;
+
   return c.res({
     image: (
       <Box
@@ -83,11 +86,13 @@ app.frame("/results", async (c) => {
         <VStack gap="4">
           <Heading>Your Zora Profiles</Heading>
           {allTokens.map(({ address, tokens, profileData }, index) => {
-            const pfp =
+            const pfp = getIpfsLink(
               profileData.user_profile.avatar ||
-              profileData?.ens_record?.text_records?.avatar;
+                profileData?.ens_record?.text_records?.avatar
+            );
             return (
               <Box
+                key={index}
                 gap="2"
                 alignVertical="center"
                 alignItems="center"
@@ -121,8 +126,85 @@ app.frame("/results", async (c) => {
     ),
     intents: [
       <Button action="/">Back</Button>,
-      <Button action="/results">Refresh</Button>,
+      <Button.Redirect
+        location={`https://warpcast.com/~/compose?text=Check%20out%20my%20Zora%20tokens!&embeds[]=${encodeURIComponent(
+          shareUrl
+        )}`}
+      >
+        Share results
+      </Button.Redirect>,
     ],
+  });
+});
+
+app.frame("/:fid", async (c) => {
+  const fid = c.req.param("fid");
+  const result = await getFarcasterUserAddress(parseInt(fid));
+  const verifiedAddresses = result?.verifiedAddresses ?? [];
+
+  const allTokens = await Promise.all(
+    verifiedAddresses.map(async (address) => {
+      const { tokens } = await fetchTokens(address);
+      const profileData = await fetchZoraProfile(address);
+      return { address, tokens, profileData };
+    })
+  );
+
+  const totalTokenCount = allTokens.reduce(
+    (sum, { tokens }) => sum + tokens.length,
+    0
+  );
+
+  return c.res({
+    image: (
+      <Box
+        grow
+        alignHorizontal="center"
+        backgroundColor="background"
+        padding="32"
+      >
+        <VStack gap="4">
+          <Heading>Zora Profiles</Heading>
+          {allTokens.map(({ address, tokens, profileData }, index) => {
+            const pfp = getIpfsLink(
+              profileData.user_profile.avatar ||
+                profileData?.ens_record?.text_records?.avatar
+            );
+            return (
+              <Box
+                key={index}
+                gap="2"
+                alignVertical="center"
+                alignItems="center"
+                flexDirection="row"
+                justifyContent="center"
+              >
+                {pfp && (
+                  <Box>
+                    <Image
+                      height="48"
+                      objectFit="none"
+                      borderRadius="256"
+                      src={pfp}
+                    />
+                  </Box>
+                )}
+                <Text align="center">
+                  {profileData.user_profile.display_name ||
+                    profileData.ens_record?.ens_name ||
+                    `${address.slice(0, 6)}...${address.slice(-4)}`}
+                  : {tokens.length || "0"} tokens
+                </Text>
+              </Box>
+            );
+          })}
+          <Text size="20" weight="300" align="center">
+            Total Tokens: {totalTokenCount}
+          </Text>
+        </VStack>
+      </Box>
+    ),
+    intents: [<Button action="/results">View My Profiles</Button>],
   });
 });
 
