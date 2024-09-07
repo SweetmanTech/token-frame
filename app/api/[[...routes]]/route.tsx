@@ -92,7 +92,6 @@ app.frame("/results", async (c) => {
             );
             return (
               <Box
-                key={index}
                 gap="2"
                 alignVertical="center"
                 alignItems="center"
@@ -172,7 +171,6 @@ app.frame("/:fid", async (c) => {
             );
             return (
               <Box
-                key={index}
                 gap="2"
                 alignVertical="center"
                 alignItems="center"
