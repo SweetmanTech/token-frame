@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import "@coinbase/onchainkit/styles.css";
-import { OnchainKitProvider } from "@coinbase/onchainkit";
-import { base } from "viem/chains";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,13 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <OnchainKitProvider
-      apiKey={process.env.PUBLIC_ONCHAINKIT_API_KEY}
-      chain={base}
-    >
-      <html lang="en">
-        <body className={inter.className}>{children}</body>
-      </html>
-    </OnchainKitProvider>
+    <html lang="en">
+      <body className={inter.className}>{children}</body>
+    </html>
   );
 }
