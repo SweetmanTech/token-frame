@@ -1,12 +1,12 @@
-import { getFrameMetadata } from 'frog/next'
-import type { Metadata } from 'next'
-import Image from 'next/image'
+import { getFrameMetadata } from "frog/next"
+import type { Metadata } from "next"
+import Image from "next/image"
 
-import styles from './page.module.css'
+import styles from "./page.module.css"
 
 export async function generateMetadata(): Promise<Metadata> {
   const frameTags = await getFrameMetadata(
-    `${process.env.VERCEL_URL || 'http://localhost:3000'}/api`,
+    `${process.env.VERCEL_URL || "http://localhost:3000"}/api`,
   )
   return {
     other: frameTags,
@@ -17,19 +17,16 @@ export default function Home() {
   return (
     <main className={styles.main}>
       <div className={styles.description}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <p>
             Get started by editing&nbsp;
             <code className={styles.code}>app/page.tsx</code>
           </p>
           <p>
-            Head to{' '}
-            <a
-              href="/api/dev"
-              style={{ display: 'inline', fontWeight: 'semibold' }}
-            >
+            Head to{" "}
+            <a href="/api/dev" style={{ display: "inline", fontWeight: "semibold" }}>
               <code className={styles.code}>localhost:3000/api</code>
-            </a>{' '}
+            </a>{" "}
             for your frame endpoint.
           </p>
         </div>
@@ -39,7 +36,7 @@ export default function Home() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            By{' '}
+            By{" "}
             <Image
               src="/vercel.svg"
               alt="Vercel Logo"
@@ -109,9 +106,7 @@ export default function Home() {
           <h2>
             Deploy <span>-&gt;</span>
           </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
+          <p>Instantly deploy your Next.js site to a shareable URL with Vercel.</p>
         </a>
       </div>
     </main>

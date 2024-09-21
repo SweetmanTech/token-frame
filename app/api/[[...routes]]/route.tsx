@@ -1,25 +1,25 @@
 /** @jsxImportSource frog/jsx */
 
-import { getFarcasterUserAddress } from "@coinbase/onchainkit/farcaster";
-import { Button, Frog } from "frog";
-import { devtools } from "frog/dev";
-import { handle } from "frog/next";
-import { serveStatic } from "frog/serve-static";
-import { Box, Heading, HStack, Image, Text, VStack, vars } from "./ui";
-import { getIpfsLink } from "@/lib/getIpfsLink";
+import { getFarcasterUserAddress } from "@coinbase/onchainkit/farcaster"
+import { Button, Frog } from "frog"
+import { devtools } from "frog/dev"
+import { handle } from "frog/next"
+import { serveStatic } from "frog/serve-static"
+import { Box, Heading, Image, Text, VStack, vars } from "./ui"
+import { getIpfsLink } from "@/lib/getIpfsLink"
 
-async function fetchTokens(creatorAddress: string) {
+async function fetchCollections(creatorAddress: string) {
   const response = await fetch(
-    `https://api.myco.wtf/api/zora/tokens?creatorAddress=${creatorAddress}`
-  );
-  const data = await response.json();
-  return data;
+    `https://api.myco.wtf/api/zora/collections?creator=${creatorAddress}`,
+  )
+  const data = await response.json()
+  return data
 }
 
 async function fetchZoraProfile(address: string) {
-  const response = await fetch(`https://api.zora.co/discover/user/${address}`);
-  const data = await response.json();
-  return data;
+  const response = await fetch(`https://api.zora.co/discover/user/${address}`)
+  const data = await response.json()
+  return data
 }
 
 const app = new Frog({
@@ -27,7 +27,7 @@ const app = new Frog({
   ui: { vars },
   basePath: "/api",
   title: "Frog Frame",
-});
+})
 
 // Uncomment to use Edge Runtime
 // export const runtime = 'edge'
@@ -35,12 +35,7 @@ const app = new Frog({
 app.frame("/", (c) => {
   return c.res({
     image: (
-      <Box
-        grow
-        alignHorizontal="center"
-        backgroundColor="background"
-        padding="32"
-      >
+      <Box grow alignHorizontal="center" backgroundColor="background" padding="32">
         <VStack gap="4">
           <Heading>Token Frame</Heading>
           <Text color="text200" size="20">
@@ -50,46 +45,40 @@ app.frame("/", (c) => {
       </Box>
     ),
     intents: [<Button action="/results">View Profiles</Button>],
-  });
-});
+  })
+})
 
 app.frame("/results", async (c) => {
-  const { frameData } = c;
-  const fid = frameData?.fid;
-  const result = await getFarcasterUserAddress(fid ?? 0);
-  const verifiedAddresses = result?.verifiedAddresses ?? [];
+  const { frameData } = c
+  const fid = frameData?.fid
+  const result = await getFarcasterUserAddress(fid ?? 0)
+  const verifiedAddresses = result?.verifiedAddresses ?? []
 
-  const allTokens = await Promise.all(
+  const allCollections = await Promise.all(
     verifiedAddresses.map(async (address) => {
-      const { tokens } = await fetchTokens(address);
-      const profileData = await fetchZoraProfile(address);
-      console.log("SWEETS profileData", profileData);
-      return { address, tokens, profileData };
-    })
-  );
+      const { collections } = await fetchCollections(address)
+      const profileData = await fetchZoraProfile(address)
+      console.log("SWEETS profileData", profileData)
+      return { address, collections, profileData }
+    }),
+  )
 
-  const totalTokenCount = allTokens.reduce(
-    (sum, { tokens }) => sum + tokens.length,
-    0
-  );
+  const totalCollectionCounts = allCollections.reduce(
+    (sum, { collections }) => sum + collections.length,
+    0,
+  )
 
-  const shareUrl = `https://token-frame-one.vercel.app/api/${fid}`;
+  const shareUrl = `https://token-frame.vercel.app/api/${fid}`
 
   return c.res({
     image: (
-      <Box
-        grow
-        alignHorizontal="center"
-        backgroundColor="background"
-        padding="32"
-      >
+      <Box grow alignHorizontal="center" backgroundColor="background" padding="32">
         <VStack gap="4">
           <Heading>Your Zora Profiles</Heading>
-          {allTokens.map(({ address, tokens, profileData }, index) => {
+          {allCollections.map(({ address, collections, profileData }, index) => {
             const pfp = getIpfsLink(
-              profileData.user_profile.avatar ||
-                profileData?.ens_record?.text_records?.avatar
-            );
+              profileData.user_profile.avatar || profileData?.ens_record?.text_records?.avatar,
+            )
             return (
               <Box
                 gap="2"
@@ -100,25 +89,20 @@ app.frame("/results", async (c) => {
               >
                 {pfp && (
                   <Box>
-                    <Image
-                      height="48"
-                      objectFit="none"
-                      borderRadius="256"
-                      src={pfp}
-                    />
+                    <Image height="48" objectFit="none" borderRadius="256" src={pfp} />
                   </Box>
                 )}
                 <Text align="center">
                   {profileData.user_profile.display_name ||
                     profileData.ens_record?.ens_name ||
                     `${address.slice(0, 6)}...${address.slice(-4)}`}
-                  : {tokens.length || "0"} tokens
+                  : {collections.length || "0"} collections
                 </Text>
               </Box>
-            );
+            )
           })}
           <Text size="20" weight="300" align="center">
-            Total Tokens: {totalTokenCount}
+            Total Collections: {totalCollectionCounts}
           </Text>
         </VStack>
       </Box>
@@ -127,48 +111,42 @@ app.frame("/results", async (c) => {
       <Button action="/">Back</Button>,
       <Button.Redirect
         location={`https://warpcast.com/~/compose?text=Check%20out%20my%20Zora%20tokens!&embeds[]=${encodeURIComponent(
-          shareUrl
+          shareUrl,
         )}`}
       >
         Share results
       </Button.Redirect>,
     ],
-  });
-});
+  })
+})
 
 app.frame("/:fid", async (c) => {
-  const fid = c.req.param("fid");
-  const result = await getFarcasterUserAddress(parseInt(fid));
-  const verifiedAddresses = result?.verifiedAddresses ?? [];
+  const fid = c.req.param("fid")
+  const result = await getFarcasterUserAddress(parseInt(fid))
+  const verifiedAddresses = result?.verifiedAddresses ?? []
 
-  const allTokens = await Promise.all(
-    verifiedAddresses.map(async (address) => {
-      const { tokens } = await fetchTokens(address);
-      const profileData = await fetchZoraProfile(address);
-      return { address, tokens, profileData };
-    })
-  );
+  const allCollections = await Promise.all(
+    verifiedAddresses.map(async (address, i) => {
+      const { collections } = await fetchCollections(address)
+      const profileData = await fetchZoraProfile(address)
+      return { address, collections, profileData }
+    }),
+  )
 
-  const totalTokenCount = allTokens.reduce(
-    (sum, { tokens }) => sum + tokens.length,
-    0
-  );
+  const totalCollectionCounts = allCollections.reduce(
+    (sum, { collections }) => sum + collections.length,
+    0,
+  )
 
   return c.res({
     image: (
-      <Box
-        grow
-        alignHorizontal="center"
-        backgroundColor="background"
-        padding="32"
-      >
+      <Box grow alignHorizontal="center" backgroundColor="background" padding="32">
         <VStack gap="4">
           <Heading>Zora Profiles</Heading>
-          {allTokens.map(({ address, tokens, profileData }, index) => {
+          {allCollections.map(({ address, collections, profileData }, index) => {
             const pfp = getIpfsLink(
-              profileData.user_profile.avatar ||
-                profileData?.ens_record?.text_records?.avatar
-            );
+              profileData.user_profile.avatar || profileData?.ens_record?.text_records?.avatar,
+            )
             return (
               <Box
                 gap="2"
@@ -179,37 +157,32 @@ app.frame("/:fid", async (c) => {
               >
                 {pfp && (
                   <Box>
-                    <Image
-                      height="48"
-                      objectFit="none"
-                      borderRadius="256"
-                      src={pfp}
-                    />
+                    <Image height="48" objectFit="none" borderRadius="256" src={pfp} />
                   </Box>
                 )}
                 <Text align="center">
                   {profileData.user_profile.display_name ||
                     profileData.ens_record?.ens_name ||
                     `${address.slice(0, 6)}...${address.slice(-4)}`}
-                  : {tokens.length || "0"} tokens
+                  : {collections.length || "0"} collections
                 </Text>
               </Box>
-            );
+            )
           })}
           <Text size="20" weight="300" align="center">
-            Total Tokens: {totalTokenCount}
+            Total Collections: {totalCollectionCounts}
           </Text>
         </VStack>
       </Box>
     ),
     intents: [<Button action="/results">View My Profiles</Button>],
-  });
-});
+  })
+})
 
-devtools(app, { serveStatic });
+devtools(app, { serveStatic })
 
-export const GET = handle(app);
-export const POST = handle(app);
+export const GET = handle(app)
+export const POST = handle(app)
 
 // NOTE: That if you are using the devtools and enable Edge Runtime, you will need to copy the devtools
 // static assets to the public folder. You can do this by adding a script to your package.json:
