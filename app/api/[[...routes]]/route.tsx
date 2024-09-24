@@ -7,28 +7,9 @@ import { handle } from "frog/next";
 import { serveStatic } from "frog/serve-static";
 import { Box, Heading, Image, Text, VStack, vars } from "./ui";
 import { getIpfsLink } from "@/lib/getIpfsLink";
-
-async function fetchTokens(creatorAddress: string) {
-  const response = await fetch(
-    `https://api.myco.wtf/api/zora/tokens?creatorAddress=${creatorAddress}`
-  );
-  const data = await response.json();
-  return data;
-}
-
-async function fetchCollections(creatorAddress: string) {
-  const response = await fetch(
-    `https://api.myco.wtf/api/zora/collections?creator=${creatorAddress}`,
-  )
-  const data = await response.json()
-  return data
-}
-
-async function fetchZoraProfile(address: string) {
-  const response = await fetch(`https://api.zora.co/discover/user/${address}`);
-  const data = await response.json();
-  return data;
-}
+import fetchCollections from "@/lib/fetchCollections";
+import fetchTokens from "@/lib/fetchTokens";
+import fetchZoraProfile from "@/lib/fetchZoraProfile";
 
 const app = new Frog({
   assetsPath: "/",
@@ -73,12 +54,12 @@ app.frame("/collections", (c) => {
         <VStack gap="4">
           <Heading>Collection Frame</Heading>
           <Text color="text200" size="20">
-            View your collection profiles
+            View your collections
           </Text>
         </VStack>
       </Box>
     ),
-    intents: [<Button action="/collectionProfile">View Profiles</Button>],
+    intents: [<Button action="/collectionProfile">View Collections</Button>],
   });
 });
 
