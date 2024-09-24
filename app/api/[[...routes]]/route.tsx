@@ -165,7 +165,7 @@ app.frame("/collectionProfile", async (c) => {
     0,
   )
 
-  const shareUrl = `https://token-frame-one.vercel.app/api/${fid}`;
+  const shareUrl = `https://token-frame-one.vercel.app/api/collection/${fid}`;
 
   return c.res({
     image: (
@@ -290,6 +290,76 @@ app.frame("/:fid", async (c) => {
           })}
           <Text size="20" weight="300" align="center">
             Total Tokens: {totalTokenCount}
+          </Text>
+        </VStack>
+      </Box>
+    ),
+    intents: [<Button action="/results">View My Profiles</Button>],
+  });
+});
+
+app.frame("/collection/:fid", async (c) => {
+  const fid = c.req.param("fid");
+  const result = await getFarcasterUserAddress(parseInt(fid));
+  const verifiedAddresses = result?.verifiedAddresses ?? [];
+
+  const allCollections = await Promise.all(
+    verifiedAddresses.map(async (address) => {
+      const { collections } = await fetchCollections(address);
+      const profileData = await fetchZoraProfile(address);
+      return { address, collections, profileData };
+    })
+  );
+
+  const totalCollectionCounts = allCollections.reduce(
+    (sum, { collections }) => sum + collections.length,
+    0
+  );
+
+  return c.res({
+    image: (
+      <Box
+        grow
+        alignHorizontal="center"
+        backgroundColor="background"
+        padding="32"
+      >
+        <VStack gap="4">
+          <Heading>Zora Profiles</Heading>
+          {allCollections.map(({ address, collections, profileData }, index) => {
+            const pfp = getIpfsLink(
+              profileData.user_profile.avatar ||
+                profileData?.ens_record?.text_records?.avatar
+            );
+            return (
+              <Box
+                gap="2"
+                alignVertical="center"
+                alignItems="center"
+                flexDirection="row"
+                justifyContent="center"
+              >
+                {pfp && (
+                  <Box>
+                    <Image
+                      height="48"
+                      objectFit="none"
+                      borderRadius="256"
+                      src={pfp}
+                    />
+                  </Box>
+                )}
+                <Text align="center">
+                  {profileData.user_profile.display_name ||
+                    profileData.ens_record?.ens_name ||
+                    `${address.slice(0, 6)}...${address.slice(-4)}`}
+                  : {collections.length || "0"} collections
+                </Text>
+              </Box>
+            );
+          })}
+          <Text size="20" weight="300" align="center">
+            Total Collections: {totalCollectionCounts}
           </Text>
         </VStack>
       </Box>
