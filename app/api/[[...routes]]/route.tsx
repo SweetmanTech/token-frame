@@ -5,7 +5,7 @@ import { Button, Frog } from "frog";
 import { devtools } from "frog/dev";
 import { handle } from "frog/next";
 import { serveStatic } from "frog/serve-static";
-import { Box, Heading, HStack, Image, Text, VStack, vars } from "./ui";
+import { Box, Heading, Image, Text, VStack, vars } from "./ui";
 import { getIpfsLink } from "@/lib/getIpfsLink";
 
 async function fetchTokens(creatorAddress: string) {
@@ -14,6 +14,14 @@ async function fetchTokens(creatorAddress: string) {
   );
   const data = await response.json();
   return data;
+}
+
+async function fetchCollections(creatorAddress: string) {
+  const response = await fetch(
+    `https://api.myco.wtf/api/zora/collections?creator=${creatorAddress}`,
+  )
+  const data = await response.json()
+  return data
 }
 
 async function fetchZoraProfile(address: string) {
@@ -50,6 +58,27 @@ app.frame("/", (c) => {
       </Box>
     ),
     intents: [<Button action="/results">View Profiles</Button>],
+  });
+});
+
+app.frame("/collections", (c) => {
+  return c.res({
+    image: (
+      <Box
+        grow
+        alignHorizontal="center"
+        backgroundColor="background"
+        padding="32"
+      >
+        <VStack gap="4">
+          <Heading>Collection Frame</Heading>
+          <Text color="text200" size="20">
+            View your collection profiles
+          </Text>
+        </VStack>
+      </Box>
+    ),
+    intents: [<Button action="/collectionProfile">View Profiles</Button>],
   });
 });
 
@@ -127,6 +156,88 @@ app.frame("/results", async (c) => {
       <Button action="/">Back</Button>,
       <Button.Redirect
         location={`https://warpcast.com/~/compose?text=Check%20out%20my%20Zora%20tokens!&embeds[]=${encodeURIComponent(
+          shareUrl
+        )}`}
+      >
+        Share results
+      </Button.Redirect>,
+    ],
+  });
+});
+
+app.frame("/collectionProfile", async (c) => {
+  const { frameData } = c;
+  const fid = frameData?.fid;
+  const result = await getFarcasterUserAddress(fid ?? 0);
+  const verifiedAddresses = result?.verifiedAddresses ?? [];
+
+  const allCollections = await Promise.all(
+    verifiedAddresses.map(async (address) => {
+      const { collections } = await fetchCollections(address)
+      const profileData = await fetchZoraProfile(address);
+      return { address, collections, profileData };
+    })
+  );
+
+  const totalCollectionCounts = allCollections.reduce(
+    (sum, { collections }) => sum + collections.length,
+    0,
+  )
+
+  const shareUrl = `https://token-frame-one.vercel.app/api/${fid}`;
+
+  return c.res({
+    image: (
+      <Box
+        grow
+        alignHorizontal="center"
+        backgroundColor="background"
+        padding="32"
+      >
+        <VStack gap="4">
+          <Heading>Your Zora Profiles</Heading>
+          {allCollections.map(({ address, collections, profileData }, index) => {
+            const pfp = getIpfsLink(
+              profileData.user_profile.avatar ||
+                profileData?.ens_record?.text_records?.avatar
+            );
+            return (
+              <Box
+                gap="2"
+                alignVertical="center"
+                alignItems="center"
+                flexDirection="row"
+                justifyContent="center"
+              >
+                {pfp && (
+                  <Box>
+                    <Image
+                      height="48"
+                      objectFit="none"
+                      borderRadius="256"
+                      src={pfp}
+                    />
+                  </Box>
+                )}
+                <Text align="center">
+                  {profileData.user_profile.display_name ||
+                    profileData.ens_record?.ens_name ||
+                    `${address.slice(0, 6)}...${address.slice(-4)}`}
+                  : {collections.length || "0"} collections
+                </Text>
+              </Box>
+            );
+          })}
+          <Text size="20" weight="300" align="center">
+            Total collections: {totalCollectionCounts}
+          </Text>
+        </VStack>
+      </Box>
+    ),
+    intents: [
+      <Button action="/">Back</Button>,
+      <Button.Redirect
+        location={`https://warpcast.com/~/compose?text=Check%20out%20my%20Zora%20collections!&embeds[]=${encodeURIComponent(
           shareUrl
         )}`}
       >
